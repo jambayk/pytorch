@@ -106,18 +106,6 @@ c10::optional<at::Device> pickDeviceType(
 } // namespace jit
 } // namespace torch
 
-static bool isHalfTensor(const torch::jit::Value* v) {
-  auto const& tt = v->type()->cast<TensorType>();
-  if (!tt) {
-    return false;
-  }
-  auto const& st = tt->scalarType();
-  if (!st) {
-    return false;
-  }
-  return *st == c10::ScalarType::Half;
-}
-
 size_t normalizeAndCheckIndex(int64_t idx, int64_t list_size) {
   if (idx < 0) {
     // Handle negative indexing
@@ -1624,7 +1612,7 @@ Stmt* TensorExprKernel::generateStmt(BackendType backendType) {
 
   l.prepareForCodegen();
 
-  if (backendType == kLLVMCodeGen && !hasReduction && !hasHalf_) {
+  if (backendType == kLLVMCodeGen && !hasReduction) {
     l.vectorizeInnerLoops();
   }
 
@@ -2099,7 +2087,6 @@ void TensorExprKernel::compile() {
   // Bind inputs to buffers.
   nInputs_ = graph_->inputs().size();
   for (auto const& input : graph_->inputs()) {
-    hasHalf_ |= isHalfTensor(input);
     bindInput(input);
     inputTypes_.push_back(input->type());
   }
@@ -2110,7 +2097,6 @@ void TensorExprKernel::compile() {
       continue;
     } else {
       for (auto const& output : n->outputs()) {
-        hasHalf_ |= isHalfTensor(output);
         if (output->hasUses()) {
           tensors_.emplace(output->unique(), computeValue(output));
         }
