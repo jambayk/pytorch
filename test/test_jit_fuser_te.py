@@ -81,8 +81,7 @@ class TestTEFuser(JitTestCase):
             torch.bool,
         ]
         self.fp_dtypes = [
-            # TODO: Add back when https://github.com/pytorch/pytorch/issues/55905 is closed
-            # torch.float16,
+            torch.float16,
             torch.float32,
             torch.float64,
         ]
@@ -1290,8 +1289,7 @@ class TestTEFuser(JitTestCase):
         dtypes = [
             torch.bool,
             torch.int,
-            # TODO: Add back when https://github.com/pytorch/pytorch/issues/55905 is closed
-            # torch.float16,
+            torch.float16,
             torch.float32,
             torch.float64,
         ]
@@ -1306,6 +1304,9 @@ class TestTEFuser(JitTestCase):
 
         bad_dtypes = []
         for dtype, output_dtype, device, size in product(dtypes, dtypes, self.devices, sizes):
+            # TODO: Add back when https://github.com/pytorch/pytorch/issues/55905 is closed
+            if dtype == torch.float16 and device == "cpu":
+                continue
             if dtype == output_dtype:
                 continue
 
@@ -1361,18 +1362,16 @@ class TestTEFuser(JitTestCase):
             torch.int16,
             torch.int32,
             torch.int64,
-            # TODO: Add back when https://github.com/pytorch/pytorch/issues/55905 is closed
-            # torch.float16,
+            torch.float16,
             torch.float32,
             torch.float64,
             torch.bool,
         ]
 
         for inp, device, dtype in product(inputs, self.devices, dtypes):
-            # TODO
-            if dtype == torch.float16 and not LLVM_ENABLED:
+            # TODO: Add back when https://github.com/pytorch/pytorch/issues/55905 is closed
+            if dtype == torch.float16 and device == "cpu":
                 continue
-
             inp = inp.to(device=device, dtype=dtype)
             try:
                 f = torch.jit.trace(lambda x: x.isnan(), (inp,))
@@ -1425,6 +1424,11 @@ class TestTEFuser(JitTestCase):
         ]
         sizes = [(1,), (2,), (4, 4)]
         for dtype, op, device, size in product(self.dtypes, unary_ops, self.devices, sizes):
+            # TODO: Add back when https://github.com/pytorch/pytorch/issues/55905 is closed
+            if dtype == torch.float16 and device == "cpu":
+                continue
+            if op in gpu_only and device == "cpu":
+                continue
             try:
                 x = self.data_for(dtype, device, size=size)
                 fn = apply(op)
@@ -1474,6 +1478,8 @@ class TestTEFuser(JitTestCase):
         ]
         devices = self.devices
         for dtype, op, device in product(self.dtypes, binary_ops, devices):
+            if dtype == torch.float16 and device == "cpu":
+                continue
             try:
                 x = self.data_for(dtype, device)
                 y = self.data_for(dtype, device)
@@ -1518,6 +1524,8 @@ class TestTEFuser(JitTestCase):
         # only using  scalar values relevant to particular ops
         scalars = [1.5, 3, 0, -2.0, -1]
         for dtype, op, device, scalar in product(self.dtypes, binary_ops, devices, scalars):
+            if dtype == torch.float16 and device == "cpu":
+                continue
             try:
                 x = self.data_for(dtype, device)
                 fn = apply_with_scalar(op, scalar)
@@ -1550,6 +1558,8 @@ class TestTEFuser(JitTestCase):
         # only using  scalar values relevant to particular ops
         scalars = [1.5, 3, -2.0, -1]  # skip 0
         for dtype, op, device, scalar in product(self.dtypes, binary_ops, devices, scalars):
+            if dtype == torch.float16 and device == "cpu":
+                continue
             try:
                 x = self.data_for(dtype, device)
                 fn = apply_with_scalar(op, scalar)
@@ -1590,6 +1600,8 @@ class TestTEFuser(JitTestCase):
         # only using  scalar values relevant to particular ops
         scalars = [1.5, 3, 0, -2.0, -1]
         for dtype, op, device, scalar in product(dtypes, binary_ops, devices, scalars):
+            if dtype == torch.float16 and device == "cpu":
+                continue
             try:
                 x = self.data_for(dtype, device)
                 fn = apply_with_scalar(op, scalar)
@@ -1619,6 +1631,8 @@ class TestTEFuser(JitTestCase):
         ]
         devices = self.devices
         for dtype, op, device in product(self.dtypes, ternary_ops, devices):
+            if dtype == torch.float16 and device == "cpu":
+                continue
             try:
                 x = self.data_for(dtype, device)
                 y = self.data_for(dtype, device)
@@ -1649,6 +1663,8 @@ class TestTEFuser(JitTestCase):
             torch.cat,
         ]
         for dtype, op, device in product(self.dtypes, list_ops, devices):
+            if dtype == torch.float16 and device == "cpu":
+                continue
             try:
                 x = self.data_for(dtype, device, size=[5, 4, 1, 7])
                 y = self.data_for(dtype, device, size=[5, 4, 1, 7])
@@ -1680,6 +1696,8 @@ class TestTEFuser(JitTestCase):
         ]
         devices = self.devices
         for dtype, op, device in product(self.dtypes, ops, devices):
+            if dtype == torch.float16 and device == "cpu":
+                continue
             try:
                 cond = self.data_for(torch.bool, device)
                 x = self.data_for(dtype, device)
